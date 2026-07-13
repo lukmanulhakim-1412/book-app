@@ -1,0 +1,138 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Lint Backend
+        run: |
+          pip install flake8
+          flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lint Frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run lint || true
+
+      - name: Build and Run Docker Compose for Testing
+        run: docker compose up -d --build
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to become healthy..."
+          # Wait up to 60 seconds for healthchecks to pass
+          for i in {1..12}; do
+            backend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose ps -q backend))
+            frontend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose ps -q frontend))
+            
+            if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "healthy" ]; then
+              echo "All services are healthy!"
+              exit 0
+            fi
+            echo "Waiting... (Backend: $backend_status, Frontend: $frontend_status)"
+            sleep 5
+          done
+          
+          echo "Services failed to become healthy in time."
+          docker compose logs
+          exit 1
+
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker compose down
+
+  build-scan-and-push:
+    name: Build, Scan and Push Images
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker (Backend)
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/backend
+
+      - name: Extract metadata (tags, labels) for Docker (Frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/frontend
+
+      - name: Build Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: ghcr.io/${{ github.repository }}/backend:latest
+          labels: ${{ steps.meta-backend.outputs.labels }}
+
+      - name: Run Trivy vulnerability scanner on Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ github.repository }}/backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Build Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+
+      - name: Run Trivy vulnerability scanner on Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ github.repository }}/frontend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Images to GHCR
+        if: success()
+        run: |
+          docker push ghcr.io/${{ github.repository }}/backend:latest
+          docker push ghcr.io/${{ github.repository }}/frontend:latest
