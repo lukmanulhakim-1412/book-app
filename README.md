@@ -107,3 +107,4 @@ If a deployment fails or introduces a critical bug:
 - **Secrets Management**: Integrate a secure secrets manager (such as AWS Secrets Manager, HashiCorp Vault, or Infisical) to inject database credentials and API keys dynamically at runtime, rather than storing them in plaintext.
 - **Auto-Scaling & Load Balancing**: Update the Terraform infrastructure to use an Auto Scaling Group (ASG) behind an Application Load Balancer (ALB) to automatically scale the application based on traffic load.
 - **Configuration Management**: Create Ansible playbooks to automatically install Docker, set up the initial server environment, and configure an Nginx reverse proxy on the EC2 instances.
+- **Proactive Alerting**: Configure Grafana/Prometheus Alerting rules to trigger notifications (e.g., via Slack or Email) if container CPU or Memory usage exceeds safe thresholds (e.g., >85%).
