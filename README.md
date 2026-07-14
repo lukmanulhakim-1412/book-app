@@ -26,7 +26,8 @@ This repository contains the completed DevOps and Infrastructure assignment for 
 │  │  [ Frontend ] *:8080    │         │  [ Prometheus ] *:9090        │   │
 │  │  [ Backend ] *:5001     │         │  [ cAdvisor ] *:8081          │   │
 │  │  [ PostgreSQL ] *:5432  │         │  [ Postgres Exporter ] *:9187 │   │
-│  └─────────────────────────┘         └───────────────────────────────┘   │
+│  └─────────────────────────┘         │  [ Node Exporter ] *:9100     │   │
+│                                      └───────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 

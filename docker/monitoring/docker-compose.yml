@@ -49,6 +49,19 @@ services:
     networks:
       - app_network
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - app_network
+
 volumes:
   prometheus_data:
   grafana_data:
