@@ -54,7 +54,7 @@ This repository contains the completed DevOps and Infrastructure assignment for 
    ```
 
 ### 2. Run the Application
-*Note: Replace `podman-compose` with `docker compose` if you are using Docker.*
+*Note: You must have [Docker](https://docs.docker.com/engine/install/) or Podman installed on your host system before running these commands. Replace `podman-compose` with `docker compose` if you are using Docker.*
 ```bash
 cd docker/book-app
 podman-compose -f docker-compose.local.yml up -d --build
@@ -106,3 +106,4 @@ If a deployment fails or introduces a critical bug:
 - **Environment Separation**: Implement strict separation of configuration via `.env` files for distinct environments (e.g., `development`, `staging`, `production`). Move all hardcoded variables out of the Compose configuration.
 - **Secrets Management**: Integrate a secure secrets manager (such as AWS Secrets Manager or HashiCorp Vault) to inject database credentials and API keys dynamically at runtime, rather than storing them in plaintext.
 - **Auto-Scaling & Load Balancing**: Update the Terraform infrastructure to use an Auto Scaling Group (ASG) behind an Application Load Balancer (ALB) to automatically scale the application based on traffic load.
+- **Configuration Management**: Create Ansible playbooks to automatically install Docker, set up the initial server environment, and configure an Nginx reverse proxy on the EC2 instances.
