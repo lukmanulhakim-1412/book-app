@@ -1,3 +1,4 @@
-
 evaluate.md
 results
+terraform/.terraform/
+terraform/.terraform.lock.hcl
