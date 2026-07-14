@@ -1,258 +1,102 @@
-# Test Instruction
+# Book Tracker App - DevOps Implementation
 
-Hi there! 👋  
-Thanks for applying to our company.
+**Chosen Role:** DevOps & Infrastructure Engineer (Mid-Level)
 
-This is a small take-home assignment where you'll contribute to a simple **Book Tracker App**.  
-You can choose how to contribute based on your strongest area: **Frontend, Backend, DevOps, QA, or Data**.
+## Overview
 
----
+This repository contains the completed DevOps and Infrastructure assignment for the Cinte technical assessment. The objective was to design and implement a robust CI/CD pipeline, containerize the application, provision cloud infrastructure via code, and establish a monitoring stack.
 
-## 🧭 Goal
+## Architecture
 
-We want to see how you solve problems, write code, and structure your work — all in about **2–4 hours**.
+```text
+┌─────────────────┐       ┌─────────────────┐       ┌──────────────────────┐
+│  Developer Push │ ────> │ GitHub Actions  │ ────> │ GitHub Container Reg │
+└─────────────────┘       └─────────────────┘       └──────────────────────┘
+                                                               │ (Pulls Images)
+                                                               ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│ AWS EC2 (t3.small) / Ubuntu 24.04                                        │
+│                                                                          │
+│  ┌─────────────────────────┐         ┌───────────────────────────────┐   │
+│  │     App Stack (Docker)  │         │   Monitoring Stack (Docker)   │   │
+│  │                         │         │                               │   │
+│  │  [ Nginx Proxy ] *:80   │         │  [ Grafana ] *:3000           │   │
+│  │         │               │ <~~~~~> │         │                     │   │
+│  │         ▼               │ metrics │         ▼                     │   │
+│  │  [ Frontend ] *:8080    │         │  [ Prometheus ] *:9090        │   │
+│  │  [ Backend ] *:5001     │         │  [ cAdvisor ] *:8081          │   │
+│  │  [ PostgreSQL ] *:5432  │         │  [ Postgres Exporter ] *:9187 │   │
+│  └─────────────────────────┘         └───────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
----
+## Decisions & Notes
 
-If you're applying for **DevOps**, **QA**, or **Data**, you can use the provided base code in the `backend/` or `frontend/` folders.
+1. **Local vs Production Compose**: I separated `docker/book-app/docker-compose.local.yml` (builds from source for local dev/testing) and `docker/book-app/docker-compose.yml` (pulls pre-built images from GHCR for production).
+2. **Monitoring Modularization**: Created a dedicated `docker/monitoring` folder with its own `docker-compose.yml` to keep the app stack lean and modular. Grafana is auto-provisioned with a default Container Metrics dashboard.
+3. **SSM over SSH**: In the Terraform configuration, Port 22 is completely closed. Access to the EC2 instance is handled securely via AWS Systems Manager (SSM) Session Manager to adhere to security best practices.
+4. **CI/CD Optimization**: The GitHub Actions pipeline utilizes GitHub's cache for Docker layers to significantly reduce build times and includes health checks before pushing the images.
+5. **Security Scanning**: I integrated Trivy for container image scanning in the CI pipeline, but configured it to not block the build upon finding vulnerabilities. Resolving the actual application/OS vulnerabilities is outside the scope of my DevOps infrastructure responsibilities for this test.
 
----
+## How to Run & Test
 
-## ✅ What to Do
+### 1. Provision Infrastructure (Terraform)
+1. Ensure your AWS CLI is configured with the necessary permissions (`~/.aws/credentials`).
+2. Navigate to the terraform directory:
+   ```bash
+   cd terraform
+   terraform init
+   terraform apply
+   ```
+3. Use the outputted Instance ID to securely connect via SSM:
+   ```bash
+   aws ssm start-session --target <instance-id>
+   ```
 
-1. **Fork this repo** into your own GitHub account.
-2. **Pick ONE area** you're applying in:
-   - Frontend
-   - Backend
-   - DevOps
-   - QA
-   - Data
-   - Project/Product Manager
-   - UI/UX
-   - Customer Services
-3. **Work only in the part that fits your chosen role.**
-4. Push your code and include in your `README.md`:
-   - Your chosen role
-   - How to run/test your part
-   - Any notes or decisions you made
-5. Create a Pull Request (PR) to the main branch of this repository
-6. Share the PR link with us for review
-
----
-
-## 🔧 Tasks by Role
-
-Choose your role and follow the detailed task instructions:
-
-- [🔹 **Fullstack** (Junior)](TASKS_FULLSTACK.md) - Complete Library Browse page features
-- [🔹 **Fullstack** (Mid-Level)](TASKS_FULLSTACK_MID.md) - Complete Library Browse page features (mid-level)
-- [🔹 **Frontend**](TASKS_FRONTEND.md) - Build User Authentication, Settings, and Insight UIs
-- [🔹 **Backend**](TASKS_BACKEND.md) - Build REST API with search and filtering
-- [🔹 **DevOps** (Junior)](TASKS_DEVOPS.md) - Create Dockerfiles and CI/CD workflows
-- [🔹 **DevOps** (Mid-Level)](TASKS_DEVOPS_MID.md) - Create Dockerfiles and CI/CD workflows (mid-level)
-- [🔹 **QA**](TASKS_QA.md) - Create comprehensive test plans and execute testing
-- [🔹 **UI/UX**](TASKS_UIUX.md) - Design User Authentication and Settings pages
-- [🔹 **Project/Product Manager** (Junior)](TASKS_PM.md) - Create project timelines and task breakdowns
-- [🔹 **Project/Product Manager** (Mid-Level)](TASKS_PM_MID.md) - Create full project plan with risk register and stakeholder plan
-- [🔹 **Data Analytic Engineer**](TASKS_DATA.md) - Build data analytics solution and dashboard
-- [🔹 **Customer Service**](TASKS_CUSTOMER_SERVICE.md) - Create customer support system
-
----
-
-## 🌟 Bonus Points (Optional)
-
-We appreciate extra touches like:
-
-- ✅ Clean code structure / design pattern
-- ✅ Branching with meaningful commit history
-- ✅ README with clear instructions
-- ✅ Use of linters, formatters, or type checkers
-- ✅ Tests even if you're not applying for QA
-- ✅ CI workflow using GitHub Actions
-- ✅ UI polish, error handling, logging, etc.
-
----
-
-## 🕐 Timebox
-
-This should take around **2–4 hours**.  
-No need to overengineer — focus on clarity and your best work in a short time.
-
----
-
-## 📩 Submission
-
-Once you're done:
-1. Create a Pull Request (PR) to the main branch of this repository
-2. Share the PR link with us for review
-
-**Note**: We prefer PRs to the original repository rather than separate repo links, as this allows us to see your changes in context and review your contribution directly.
-
-Good luck, and have fun! 🚀
-
----
-
-# Book Tracker App
-
-A full-stack web application for managing your reading list, built with Flask and React. Build for People Recruitment Test. Integration with backend only works on page Library section Browse Library. Live preview on: https://book-app.cinte.id/
-
-<img src="./assets/home.png" height="200" alt="Home">
-<img src="./assets/library.png" height="200" alt="Library">
-
-## Features
-
-- 📚 Add, view, update, and delete books
-- 📖 Track reading status (unread/reading/completed)
-- 🎨 Modern and responsive UI with Tailwind CSS
-- 🔄 Real-time updates
-- ⚡ Fast and efficient with React + Vite
-- 🛡️ Type-safe with TypeScript
-
-## Tech Stack
-
-### Backend
-- Python 3.x
-- Flask
-- Flask-CORS
-- SQLAlchemy
-- python-dotenv
-
-### Frontend
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- Axios
-- shadcn/ui components
-
-## Prerequisites
-
-- Python 3.x
-- Node.js 16.x or later
-- npm or yarn
-
-## Getting Started
-
-### Backend Setup
-
-1. Create and activate a virtual environment:
+### 2. Run the Application
+*Note: Replace `podman-compose` with `docker compose` if you are using Docker.*
 ```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+cd docker/book-app
+podman-compose -f docker-compose.local.yml up -d --build
 ```
+- **Frontend UI**: [http://localhost:8080](http://localhost:8080)
+- **Backend API**: [http://localhost:5001/api/books](http://localhost:5001/api/books)
 
-2. Install backend dependencies:
+### 3. Run the Monitoring Stack
+*The application stack must be running first so the monitoring tools can attach to the `book-app_app_network`.*
 ```bash
-pip install -r requirements.txt
+cd docker/monitoring
+podman-compose up -d
 ```
+- **Grafana**: [http://localhost:3000](http://localhost:3000) (Login: `admin` / `admin`)
+- **Prometheus**: [http://localhost:9090](http://localhost:9090)
 
-3. Start the Flask server:
-```bash
-cd backend
-python app.py
-```
+## Rollback Strategy
 
-The backend server will start on http://localhost:5000
+If a deployment fails or introduces a critical bug:
+1. **Application Rollback**: Revert the commit in Git, or manually update the production `docker/book-app/docker-compose.yml` to pull a specific older image tag from GHCR instead of `latest`, then run `docker compose up -d` on the server.
+2. **Infrastructure Rollback**: If a Terraform change causes issues, revert the `.tf` file changes in version control and run `terraform apply`. To completely destroy the environment: `terraform destroy`.
 
-### Frontend Setup
+## Incident Response Runbook
 
-1. Install frontend dependencies:
-```bash
-cd frontend
-npm install
-```
+### Scenario: High Memory Usage (OOM Kills)
+**Alert**: Grafana shows container memory utilization hitting 100%.
+**Triage**:
+1. Open Grafana Dashboards -> "Container Metrics (cAdvisor)".
+2. Identify the specific container consuming the most memory.
+3. Check the application logs for memory leaks or large queries:
+   ```bash
+   docker logs book-app_backend_1 --tail 100
+   ```
+**Mitigation**:
+1. If the container is stuck, manually restart it: `docker restart book-app_backend_1`.
+2. If the application is genuinely resource-starved under high traffic, vertically scale the instance by updating the `t3.small` instance in `terraform/variables.tf` to `t3.medium`, and run `terraform apply`.
 
-2. Start the development server:
-```bash
-npm run dev
-```
-
-The frontend will be available at http://localhost:5173
-
-## API Documentation
-
-### Endpoints
-
-#### GET /api/books
-- Returns all books
-- Response: Array of book objects
-
-#### POST /api/books
-- Creates a new book
-- Request Body:
-```json
-{
-  "title": "string",
-  "author": "string",
-  "status": "unread" | "reading" | "completed"
-}
-```
-
-#### PUT /api/books/<id>
-- Updates an existing book
-- Request Body: Same as POST
-
-#### DELETE /api/books/<id>
-- Deletes a book by ID
-
-## Project Structure
-
-```
-book-app/
-├── backend/
-│   └── app.py              # Flask backend API
-├── frontend/
-│   ├── src/
-│   │   ├── types/
-│   │   │   └── book.ts     # TypeScript interfaces
-│   │   ├── services/
-│   │   │   └── api.ts      # API service functions
-│   │   ├── App.tsx         # Main React component
-│   │   ├── main.tsx        # React entry point
-│   │   └── index.css       # Global styles
-│   ├── tailwind.config.js  # Tailwind configuration
-│   └── package.json        # Frontend dependencies
-└── requirements.txt        # Backend dependencies
-```
-
-## Development
-
-### Backend Development
-- The backend uses Flask for the API
-- CORS is enabled for frontend communication
-- Currently using in-memory storage (can be extended to use a database)
-
-### Frontend Development
-- Built with React + Vite for fast development
-- TypeScript for type safety
-- Tailwind CSS for styling
-- shadcn/ui components for consistent UI
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Future Enhancements
-
-- [ ] Authentication system
-- [ ] Search and filtering
-- [ ] Sorting options
-- [ ] Book categories/tags
-- [ ] Reading progress tracking
-- [ ] Book ratings and reviews
-- [ ] Database integration
-- [ ] User profiles and personal libraries
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Scenario: Service Down (Backend API Unreachable)
+**Alert**: Frontend UI fails to load books, API returns 502/503.
+**Triage**:
+1. Check Prometheus target health at `http://localhost:9090/targets`. Is the backend target down?
+2. Check if the container exited unexpectedly: `docker ps -a`.
+**Mitigation**:
+1. Ensure the PostgreSQL database is healthy (`docker logs book-app_database_1`). The backend depends on the database to start.
+2. Restart the backend service: `docker compose -f docker-compose.yml restart backend`.
