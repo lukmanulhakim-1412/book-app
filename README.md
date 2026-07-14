@@ -100,3 +100,9 @@ If a deployment fails or introduces a critical bug:
 **Mitigation**:
 1. Ensure the PostgreSQL database is healthy (`docker logs book-app_database_1`). The backend depends on the database to start.
 2. Restart the backend service: `docker compose -f docker-compose.yml restart backend`.
+
+## Future Improvements (TODOs)
+
+- **Environment Separation**: Implement strict separation of configuration via `.env` files for distinct environments (e.g., `development`, `staging`, `production`). Move all hardcoded variables out of the Compose configuration.
+- **Secrets Management**: Integrate a secure secrets manager (such as AWS Secrets Manager or HashiCorp Vault) to inject database credentials and API keys dynamically at runtime, rather than storing them in plaintext.
+- **Auto-Scaling & Load Balancing**: Update the Terraform infrastructure to use an Auto Scaling Group (ASG) behind an Application Load Balancer (ALB) to automatically scale the application based on traffic load.
