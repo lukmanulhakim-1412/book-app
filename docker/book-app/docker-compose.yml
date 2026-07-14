@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  backend:
+    image: ghcr.io/lukmanulhakim-1412/book-app/backend:latest
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5001
+      - FLASK_DEBUG=False
+      - DATABASE_URL=postgresql://user:password@database:5432/book_db
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/health_check.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - app_network
+
+  frontend:
+    image: ghcr.io/lukmanulhakim-1412/book-app/frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health_check.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - app_network
+
+  database:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=book_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d book_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

@@ -36,15 +36,15 @@ jobs:
           npm run lint || true
 
       - name: Build and Run Docker Compose for Testing
-        run: docker compose -f docker-compose.local.yml up -d --build
+        run: docker compose -f docker/book-app/docker-compose.local.yml up -d --build
 
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to become healthy..."
           # Wait up to 60 seconds for healthchecks to pass
           for i in {1..12}; do
-            backend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose -f docker-compose.local.yml ps -q backend))
-            frontend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose -f docker-compose.local.yml ps -q frontend))
+            backend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose -f docker/book-app/docker-compose.local.yml ps -q backend))
+            frontend_status=$(docker inspect --format="{{if .State.Health}}{{.State.Health.Status}}{{end}}" $(docker compose -f docker/book-app/docker-compose.local.yml ps -q frontend))
             
             if [ "$backend_status" = "healthy" ] && [ "$frontend_status" = "healthy" ]; then
               echo "All services are healthy!"
@@ -55,12 +55,12 @@ jobs:
           done
           
           echo "Services failed to become healthy in time."
-          docker compose -f docker-compose.local.yml logs
+          docker compose -f docker/book-app/docker-compose.local.yml logs
           exit 1
 
       - name: Tear down Docker Compose
         if: always()
-        run: docker compose -f docker-compose.local.yml down
+        run: docker compose -f docker/book-app/docker-compose.local.yml down
 
   build-scan-and-push:
     name: Build, Scan and Push Images
